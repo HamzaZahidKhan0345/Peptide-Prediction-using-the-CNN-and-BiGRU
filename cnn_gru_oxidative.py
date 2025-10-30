@@ -10,7 +10,7 @@ from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.metrics import accuracy_score, recall_score, confusion_matrix, matthews_corrcoef
 import esm
 
-# -------------------- 1. Set Seed --------------------
+
 def set_seed(seed=42):
     random.seed(seed)
     np.random.seed(seed)
@@ -23,7 +23,7 @@ def set_seed(seed=42):
 
 set_seed(42)
 
-# -------------------- 2. Load Dataset --------------------
+
 DATA_PATH = "/media/8TB_hardisk/hamza/peptide/Datasets/oxidative/oxidative_peptide.csv"
 df = pd.read_csv(DATA_PATH)
 sequences = df["oxidative_peptide"].tolist()
@@ -31,18 +31,14 @@ labels = df["label"].astype(int).tolist()
 
 
 
-# sequences = df["oxidative_peptide"].tolist()
-# labels = df["label"].tolist()
 
 
-# -------------------- 3. Load ESM2 Model --------------------
 model_esm, alphabet = esm.pretrained.esm2_t33_650M_UR50D()
 batch_converter = alphabet.get_batch_converter()
 model_esm.eval()
 device = torch.device("cuda:7" if torch.cuda.is_available() else "cpu")
 model_esm = model_esm.to(device)
 
-# -------------------- 4. Extract Embeddings --------------------
 MAX_LEN = 50
 
 def extract_residue_embeddings(seq):
@@ -69,7 +65,7 @@ for seq in sequences:
 all_embeddings = torch.stack(all_embeddings)
 all_labels = torch.tensor(labels, dtype=torch.long)
 
-# -------------------- 5. Split Data (80% train-val, 20% independent test) --------------------
+
 X_train_val, X_test, y_train_val, y_test = train_test_split(
     all_embeddings, all_labels, test_size=0.2, stratify=all_labels, random_state=42
 )
@@ -86,7 +82,6 @@ class EmbeddingDataset(Dataset):
     def __getitem__(self, idx):
         return self.embeddings[idx], self.labels[idx]
 
-# -------------------- 7. CNN-BiGRU Model --------------------
 class CNN_BiGRU_Classifier(nn.Module):
     def __init__(self, input_dim=1280, hidden_dim=128, gru_layers=1, num_classes=2, dropout=0.5):
         super().__init__()
@@ -107,7 +102,7 @@ class CNN_BiGRU_Classifier(nn.Module):
         x = self.dropout(h_n)
         return self.fc(x)
 
-# -------------------- 8. Training Utilities --------------------
+
 def train_epoch(model, dataloader, criterion, optimizer, device):
     model.train()
     total_loss = 0
@@ -140,7 +135,7 @@ def validate_epoch(model, dataloader, criterion, device):
             all_labels.extend(y.cpu().numpy())
     return total_loss / len(dataloader.dataset), accuracy_score(all_labels, all_preds), all_labels, all_preds
 
-# -------------------- 9. 10-Fold Cross Validation --------------------
+
 criterion = nn.CrossEntropyLoss()
 num_epochs = 3000
 patience = 30
@@ -196,7 +191,6 @@ for fold, (train_idx, val_idx) in enumerate(kfold.split(X_train_val, y_train_val
         best_fold_acc = val_acc
         best_fold_model_state = model.state_dict()
 
-# -------------------- 10. Fold Summary --------------------
 df_folds = pd.DataFrame(fold_results)
 mean_vals = df_folds.mean(numeric_only=True)
 std_vals = df_folds.std(numeric_only=True)
