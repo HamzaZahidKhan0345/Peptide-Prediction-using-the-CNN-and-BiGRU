@@ -1,1 +1,1 @@
-# Peptide-Prediction-using-the-CNN-and-BiGRU
+# Peptide Prediction using CNN and BiGRU
